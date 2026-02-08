@@ -97,6 +97,108 @@ app.get('/applications', async (req, res) => {
   }
 });
 
+// ============================================
+// ASSESSMENTS ENDPOINTS
+// ============================================
+
+// Guardar resultado de assessment
+app.post('/api/assessments', async (req, res) => {
+  try {
+    const {
+      candidate_name,
+      candidate_email,
+      challenge_id,
+      overall_score,
+      detection_score,
+      prioritization_score,
+      communication_score,
+      time_efficiency,
+      recommendation,
+      green_flags,
+      yellow_flags,
+      red_flags,
+      total_time
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from('assessments')
+      .insert([{
+        candidate_name,
+        candidate_email,
+        challenge_id: challenge_id || 1,
+        overall_score,
+        detection_score,
+        prioritization_score,
+        communication_score,
+        time_efficiency,
+        recommendation,
+        green_flags,
+        yellow_flags,
+        red_flags,
+        total_time
+      }])
+      .select();
+
+    if (error) {
+      console.error('Error saving assessment:', error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ 
+      success: true, 
+      assessment: data[0],
+      message: 'Assessment saved successfully'
+    });
+
+  } catch (error) {
+    console.error('Error in POST /api/assessments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Obtener todos los assessments
+app.get('/api/assessments', async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('assessments')
+      .select('*')
+      .order('completed_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ assessments: data });
+
+  } catch (error) {
+    console.error('Error in GET /api/assessments:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Obtener assessments por email de candidato
+app.get('/api/assessments/candidate/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const { data, error } = await supabase
+      .from('assessments')
+      .select('*')
+      .eq('candidate_email', email)
+      .order('completed_at', { ascending: false });
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ assessments: data });
+
+  } catch (error) {
+    console.error('Error in GET /api/assessments/candidate:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Servidor en http://localhost:${PORT}`);
 });
